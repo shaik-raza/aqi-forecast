@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Air Quality Forecast</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0f1115;
+    color: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 32px;
+    max-width: 480px;
+    width: 100%;
+  }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  p.sub { color: #999; font-size: 14px; margin-top: 0; margin-bottom: 24px; }
+  label { display: block; font-size: 13px; color: #bbb; margin-bottom: 4px; margin-top: 14px; }
+  input {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.03); color: #fff;
+    box-sizing: border-box; font-size: 14px;
+  }
+  button {
+    margin-top: 22px; width: 100%; padding: 10px; border-radius: 8px;
+    border: none; background: #3b82f6; color: white; font-size: 15px; cursor: pointer;
+  }
+  button:hover { background: #2563eb; }
+  .result {
+    margin-top: 24px; padding: 16px; border-radius: 10px;
+    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);
+  }
+  .result h2 { margin: 0 0 4px; font-size: 18px; font-weight: 500; }
+  .error { margin-top: 20px; color: #f87171; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Air quality forecast</h1>
+    <p class="sub">Enter sensor readings to predict CO level</p>
+
+    <form action="/predict" method="POST">
+      <label>PT08.S1 (CO)</label>
+      <input type="number" step="any" name="PT08.S1(CO)" required>
+
+      <label>Benzene (C6H6)</label>
+      <input type="number" step="any" name="C6H6(GT)" required>
+
+      <label>PT08.S2 (NMHC)</label>
+      <input type="number" step="any" name="PT08.S2(NMHC)" required>
+
+      <label>NOx</label>
+      <input type="number" step="any" name="NOx(GT)" required>
+
+      <label>PT08.S3 (NOx)</label>
+      <input type="number" step="any" name="PT08.S3(NOx)" required>
+
+      <label>NO2</label>
+      <input type="number" step="any" name="NO2(GT)" required>
+
+      <label>PT08.S4 (NO2)</label>
+      <input type="number" step="any" name="PT08.S4(NO2)" required>
+
+      <label>PT08.S5 (O3)</label>
+      <input type="number" step="any" name="PT08.S5(O3)" required>
+
+      <label>Temperature (T)</label>
+      <input type="number" step="any" name="T" required>
+
+      <label>Humidity (RH)</label>
+      <input type="number" step="any" name="RH" required>
+
+      <label>Absolute Humidity (AH)</label>
+      <input type="number" step="any" name="AH" required>
+
+      <button type="submit">Predict CO level</button>
+    </form>
+
+    {% if prediction is defined %}
+    <div class="result">
+      <h2>{{ prediction }} mg/m³</h2>
+      <p>Status: {{ status }}</p>
+    </div>
+    {% endif %}
+
+    {% if error is defined %}
+    <p class="error">Error: {{ error }}</p>
+    {% endif %}
+  </div>
+</body>
+</html>
