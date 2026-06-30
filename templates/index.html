@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Air Quality Forecast</title>
+<title>Air Quality Index Forecast</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   body {
     margin: 0;
@@ -13,15 +14,16 @@
     justify-content: center;
     padding: 40px 20px;
   }
+  .wrap { max-width: 480px; width: 100%; }
   .card {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 14px;
     padding: 32px;
-    max-width: 480px;
-    width: 100%;
+    margin-bottom: 20px;
   }
   h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  h2 { font-size: 15px; font-weight: 500; margin: 0 0 14px; color: #ccc; }
   p.sub { color: #999; font-size: 14px; margin-top: 0; margin-bottom: 24px; }
   label { display: block; font-size: 13px; color: #bbb; margin-bottom: 4px; margin-top: 14px; }
   input {
@@ -36,65 +38,165 @@
   }
   button:hover { background: #2563eb; }
   .result {
-    margin-top: 24px; padding: 16px; border-radius: 10px;
-    background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);
+    margin-top: 24px; padding: 18px; border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border-left: 4px solid var(--status-color, #3b82f6);
   }
-  .result h2 { margin: 0 0 4px; font-size: 18px; font-weight: 500; }
+  .result .aqi-value { font-size: 32px; font-weight: 500; margin: 0; }
+  .result .aqi-label { font-size: 14px; color: #999; margin: 2px 0 8px; }
+  .result .status { font-size: 16px; font-weight: 500; margin: 0 0 8px; }
+  .result .advice { font-size: 13px; color: #ccc; line-height: 1.5; margin: 0; }
   .error { margin-top: 20px; color: #f87171; font-size: 13px; }
+  canvas { max-height: 240px; margin-top: 16px; }
+  #showTrendsBtn {
+    margin-top: 0;
+    width: auto;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.08);
+    font-size: 13px;
+  }
+  #showTrendsBtn:hover { background: rgba(255,255,255,0.14); }
 </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Air quality forecast</h1>
-    <p class="sub">Enter sensor readings to predict CO level</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>Air quality index forecast</h1>
+      <p class="sub">Enter current sensor readings to predict AQI for the next hour</p>
 
-    <form action="/predict" method="POST">
-      <label>PT08.S1 (CO)</label>
-      <input type="number" step="any" name="PT08.S1(CO)" required>
+      <form action="/predict" method="POST">
+        <label>PT08.S1 (CO)</label>
+        <input type="number" step="any" name="PT08.S1(CO)" required>
 
-      <label>Benzene (C6H6)</label>
-      <input type="number" step="any" name="C6H6(GT)" required>
+        <label>Benzene (C6H6)</label>
+        <input type="number" step="any" name="C6H6(GT)" required>
 
-      <label>PT08.S2 (NMHC)</label>
-      <input type="number" step="any" name="PT08.S2(NMHC)" required>
+        <label>PT08.S2 (NMHC)</label>
+        <input type="number" step="any" name="PT08.S2(NMHC)" required>
 
-      <label>NOx</label>
-      <input type="number" step="any" name="NOx(GT)" required>
+        <label>NOx</label>
+        <input type="number" step="any" name="NOx(GT)" required>
 
-      <label>PT08.S3 (NOx)</label>
-      <input type="number" step="any" name="PT08.S3(NOx)" required>
+        <label>PT08.S3 (NOx)</label>
+        <input type="number" step="any" name="PT08.S3(NOx)" required>
 
-      <label>NO2</label>
-      <input type="number" step="any" name="NO2(GT)" required>
+        <label>NO2</label>
+        <input type="number" step="any" name="NO2(GT)" required>
 
-      <label>PT08.S4 (NO2)</label>
-      <input type="number" step="any" name="PT08.S4(NO2)" required>
+        <label>PT08.S4 (NO2)</label>
+        <input type="number" step="any" name="PT08.S4(NO2)" required>
 
-      <label>PT08.S5 (O3)</label>
-      <input type="number" step="any" name="PT08.S5(O3)" required>
+        <label>PT08.S5 (O3)</label>
+        <input type="number" step="any" name="PT08.S5(O3)" required>
 
-      <label>Temperature (T)</label>
-      <input type="number" step="any" name="T" required>
+        <label>Temperature (T)</label>
+        <input type="number" step="any" name="T" required>
 
-      <label>Humidity (RH)</label>
-      <input type="number" step="any" name="RH" required>
+        <label>Humidity (RH)</label>
+        <input type="number" step="any" name="RH" required>
 
-      <label>Absolute Humidity (AH)</label>
-      <input type="number" step="any" name="AH" required>
+        <label>Absolute Humidity (AH)</label>
+        <input type="number" step="any" name="AH" required>
 
-      <button type="submit">Predict CO level</button>
-    </form>
+        <button type="submit">Forecast next-hour AQI</button>
+      </form>
 
-    {% if prediction is defined %}
-    <div class="result">
-      <h2>{{ prediction }} mg/m³</h2>
-      <p>Status: {{ status }}</p>
+      {% if prediction is defined %}
+      <div class="result" style="--status-color: {{ color }};">
+        <p class="aqi-value">{{ prediction }}</p>
+        <p class="aqi-label">Forecasted AQI (next hour)</p>
+        <p class="status" style="color: {{ color }};">{{ status }}</p>
+        <p class="advice">{{ advice }}</p>
+      </div>
+      {% endif %}
+
+      {% if error is defined %}
+      <p class="error">Error: {{ error }}</p>
+      {% endif %}
+    </div>
+
+    <div class="card" id="trendCard">
+      <h2>Recent AQI trend</h2>
+      <button id="showTrendsBtn" type="button">Show trends</button>
+      <canvas id="trendChart" style="display:none;"></canvas>
+    </div>
+
+    {% if pollutants is defined %}
+    <div class="card">
+      <h2>Pollutant breakdown (this reading)</h2>
+      <canvas id="pollutantChart"></canvas>
     </div>
     {% endif %}
-
-    {% if error is defined %}
-    <p class="error">Error: {{ error }}</p>
-    {% endif %}
   </div>
+
+  <script>
+    // Trend chart - only fetched and rendered when the button is clicked
+    let trendLoaded = false;
+    document.getElementById('showTrendsBtn').addEventListener('click', function () {
+      const canvas = document.getElementById('trendChart');
+      const btn = this;
+
+      if (trendLoaded) {
+        canvas.style.display = canvas.style.display === 'none' ? 'block' : 'none';
+        btn.textContent = canvas.style.display === 'none' ? 'Show trends' : 'Hide trends';
+        return;
+      }
+
+      btn.textContent = 'Loading...';
+      fetch('/history')
+        .then(res => res.json())
+        .then(data => {
+          canvas.style.display = 'block';
+          btn.textContent = 'Hide trends';
+          trendLoaded = true;
+
+          new Chart(canvas, {
+            type: 'line',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                label: 'AQI',
+                data: data.values,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: { color: '#888', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+              }
+            }
+          });
+        });
+    });
+
+    {% if pollutants is defined %}
+    // Pollutant breakdown chart - only renders if a prediction was just made
+    new Chart(document.getElementById('pollutantChart'), {
+      type: 'bar',
+      data: {
+        labels: [{% for key in pollutants.keys() %}"{{ key }}",{% endfor %}],
+        datasets: [{
+          data: [{% for val in pollutants.values() %}{{ val }},{% endfor %}],
+          backgroundColor: ['#3b82f6', '#a855f7', '#f97316', '#ef4444']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#888' }, grid: { display: false } },
+          y: { ticks: { color: '#888' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+    {% endif %}
+  </script>
 </body>
 </html>
