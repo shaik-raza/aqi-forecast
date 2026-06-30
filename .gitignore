@@ -6,20 +6,21 @@ __pycache__/
 venv/
 env/
 .venv/
- 
+
 # Jupyter
 .ipynb_checkpoints/
- 
-# Model files (large, regenerate from training script instead of committing)
-model/*.pkl
- 
+
+# Old/unused model files (not needed for deployment - app.py uses aqi_forecast_model.pkl)
+model/co_predictor.pkl
+model/aqi_predictor.pkl
+
 # Environment / secrets
 .env
- 
+
 # OS files
 .DS_Store
 Thumbs.db
- 
+
 # Flask
 instance/
-*.logS
+*.log
